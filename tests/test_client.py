@@ -53,6 +53,14 @@ def test_challenge_page_with_200_is_treated_as_403(make_client, store):
     assert transport.resets == 1
 
 
+def test_cloudflare_beacon_is_not_a_challenge(make_client):
+    beacon = "<script>var u='/cdn-cgi/challenge-platform/scripts/jsd/main.js?ray=abc'</script>"
+    page = f"<html><h1 class='band_name'>X</h1>{beacon}</html>"
+    client, transport, _ = make_client({URL: [ok(page)]})
+    assert client.fetch(URL).status == 200
+    assert transport.resets == 0
+
+
 def test_429_honors_retry_after(make_client):
     client, _, clock = make_client({URL: [ok(status=429, headers={"Retry-After": "30"}), ok("band")]})
     with pytest.raises(BlockedError) as e:

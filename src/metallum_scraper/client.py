@@ -83,7 +83,8 @@ class CurlTransport:
         self._session.close()
 
 
-_CHALLENGE_MARKERS = (b"<title>Just a moment...</title>", b"cf_chl_opt", b"challenge-platform")
+# Not "challenge-platform": normal pages embed Cloudflare's /cdn-cgi/challenge-platform/ beacon script.
+_CHALLENGE_MARKERS = (b"<title>Just a moment...</title>", b"cf_chl_opt")
 
 
 def looks_like_challenge(body: bytes) -> bool:
