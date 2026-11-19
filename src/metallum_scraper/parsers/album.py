@@ -33,7 +33,11 @@ class AlbumBand:
 
 @dataclass
 class Track:
-    id: int | None
+    # Song IDs are not unique per track: side-split releases can repeat a song
+    # (anchors "123A"/"123B") and box sets reuse other releases' song records.
+    position: int
+    song_id: int | None
+    anchor_raw: str | None
     number: int | None
     disc: int | None
     side: str | None
@@ -131,14 +135,17 @@ def _tracks(doc: LexborHTMLParser) -> list[Track]:
             if not number or not number.endswith("."):
                 continue
             anchor = cells[0].css_first("a[name]")
-            song_id = to_int(anchor.attributes.get("name")) if anchor is not None else None
+            anchor_raw = anchor.attributes.get("name") if anchor is not None else None
+            m = re.match(r"\d+", anchor_raw or "")
             lyrics_cell = cells[3] if len(cells) > 3 else None
             has_lyrics = lyrics_cell is not None and lyrics_cell.css_first('a[id^="lyricsButton"]') is not None
             note = text(lyrics_cell.css_first("em")) if lyrics_cell is not None else None
             duration = text(cells[2])
             tracks.append(
                 Track(
-                    id=song_id,
+                    position=len(tracks) + 1,
+                    song_id=int(m.group()) if m else None,
+                    anchor_raw=anchor_raw,
                     number=to_int(number),
                     disc=disc,
                     side=side,

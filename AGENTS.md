@@ -80,6 +80,9 @@ Band IDs = last path segment of the link URL.
   Advance pagination by number of rows actually received; error if a page before `iTotalRecords` is empty.
 - JSON responses are sometimes wrapped in HTML (`<pre>` or `<body>`); unwrap before `json.loads`.
 - Cloudflare challenges are the #1 failure mode of existing scrapers.
+- Normal pages embed Cloudflare's `/cdn-cgi/challenge-platform/` beacon script; don't treat that as a challenge.
+- Song IDs are not unique per track: side-split releases suffix anchors with the side (`1479887A`/`1479887B`)
+  and may repeat a song on both sides; box sets reuse the song records of the albums they contain.
 
 ## Seeding & scope
 Slice is chosen at runtime via CLI:
@@ -101,7 +104,7 @@ metallum export --format parquet --out ../metal-analysis/data/raw
 - `band_genres(band_id, genre_token)` — tokenized from e.g. "Black/Death Metal (early); Melodic Death Metal (later)"
 - `albums(id, name, type, release_date_raw, release_date, label_id, label_name, format, catalog_id, review_count, review_avg)`
 - `album_bands(album_id, band_id)` — split albums have multiple bands
-- `tracks(id, album_id, number, disc, title, duration_s, has_lyrics)`
+- `tracks(album_id, position, song_id, anchor_raw, number, disc, side, title, duration_s, has_lyrics)` — PK `(album_id, position)`
 - `artists(id, name, real_name, gender, country, birth_date_raw, place_of_birth)`
 - `band_members(band_id, artist_id, lineup_type, roles_raw, years_raw)` — lineup_type ∈ current/past/live
 - `album_lineup(album_id, band_id, artist_id, role_raw)`

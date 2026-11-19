@@ -122,8 +122,10 @@ CREATE TABLE album_bands (
     position INTEGER NOT NULL
 );
 CREATE TABLE tracks (
-    id INTEGER,
     album_id INTEGER NOT NULL,
+    position INTEGER NOT NULL,
+    song_id INTEGER,
+    anchor_raw TEXT,
     number INTEGER,
     disc INTEGER,
     side TEXT,
@@ -131,7 +133,8 @@ CREATE TABLE tracks (
     duration_raw TEXT,
     duration_s INTEGER,
     has_lyrics INTEGER,
-    lyrics_note TEXT
+    lyrics_note TEXT,
+    PRIMARY KEY (album_id, position)
 );
 CREATE TABLE album_lineup (
     album_id INTEGER NOT NULL,

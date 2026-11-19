@@ -85,15 +85,28 @@ def test_album():
         "CD",
     )
     assert (album.review_count, album.review_avg) == (23, 85)
-    assert [(t.id, t.disc, t.side, t.number, t.duration_s, t.has_lyrics, t.lyrics_note) for t in album.tracks] == [
-        (22406, 1, "Side A", 1, 369, True, None),
-        (22407, 1, "Side A", 2, 149, False, "instrumental"),
-        (22408, 2, None, 1, 3723, False, None),
+    assert [
+        (t.position, t.song_id, t.disc, t.side, t.number, t.duration_s, t.has_lyrics, t.lyrics_note)
+        for t in album.tracks
+    ] == [
+        (1, 22406, 1, "Side A", 1, 369, True, None),
+        (2, 22407, 1, "Side A", 2, 149, False, "instrumental"),
+        (3, 22408, 2, None, 1, 3723, False, None),
     ]
     assert [(e.band_id, e.artist_id, e.artist_name, e.section, e.role_raw) for e in album.lineup] == [
         (146, 1323, "Fenriz", "band", "Drums, Vocals, Guitars, Bass"),
         (146, 1555, "Skoll", "guest", "Drums"),
         (146, None, "Uncredited Person", "misc", "Cover art"),
+    ]
+
+
+def test_album_repeated_song_on_both_sides():
+    album = parse_album(fixture("synthetic_side_album.html"), endpoints.album(209001))
+    assert [(t.position, t.song_id, t.anchor_raw, t.side, t.number, t.has_lyrics) for t in album.tracks] == [
+        (1, 1479887, "1479887A", "Side A", 1, False),
+        (2, 1479889, "1479889A", "Side A", 2, True),
+        (3, 1479887, "1479887B", "Side B", 1, False),
+        (4, 1479889, "1479889B", "Side B", 2, True),
     ]
 
 

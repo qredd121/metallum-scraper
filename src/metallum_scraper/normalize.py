@@ -76,8 +76,10 @@ def album_rows(page: Page) -> Rows:
         ],
         "tracks": [
             {
-                "id": t.id,
                 "album_id": a.id,
+                "position": t.position,
+                "song_id": t.song_id,
+                "anchor_raw": t.anchor_raw,
                 "number": t.number,
                 "disc": t.disc,
                 "side": t.side,
