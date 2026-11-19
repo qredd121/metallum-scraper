@@ -161,6 +161,15 @@ CREATE TABLE artist_bands (
     roles_raw TEXT,
     years_raw TEXT
 );
+CREATE TABLE artist_albums (
+    artist_id INTEGER NOT NULL,
+    band_id INTEGER,
+    membership_type TEXT NOT NULL,
+    album_id INTEGER,
+    album_name TEXT,
+    year INTEGER,
+    role_raw TEXT
+);
 """
 
 NORMALIZED_TABLES = (
@@ -174,6 +183,7 @@ NORMALIZED_TABLES = (
     "album_lineup",
     "artists",
     "artist_bands",
+    "artist_albums",
 )
 EXPORT_TABLES = ("band_index", *NORMALIZED_TABLES)
 

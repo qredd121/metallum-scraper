@@ -92,6 +92,7 @@ def test_album():
     ]
     assert [(e.band_id, e.artist_id, e.artist_name, e.section, e.role_raw) for e in album.lineup] == [
         (146, 1323, "Fenriz", "band", "Drums, Vocals, Guitars, Bass"),
+        (146, 1555, "Skoll", "guest", "Drums"),
         (146, None, "Uncredited Person", "misc", "Cover art"),
     ]
 
@@ -118,7 +119,12 @@ def test_artist():
         (146, "Darkthrone", "active", "1986-present"),
         (2018, "Isengard", "past", "1989-1995"),
         (None, "Some Pop Band", "past", None),
-        (2018, "Isengard", "guest", "1993"),
+        (2018, "Isengard", "guest", None),
+    ]
+    guest = artist.memberships[-1]
+    assert guest.roles_raw == "As Fenriz:"
+    assert [(a.album_id, a.album_name, a.year, a.role_raw) for a in guest.albums] == [
+        (980198, "Vinterskugge", 1993, "Vocals")
     ]
 
 

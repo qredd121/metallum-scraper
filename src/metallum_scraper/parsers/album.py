@@ -20,7 +20,7 @@ from ._html import (
 # Lineup tabs and the section name recorded for them.
 LINEUP_TABS = (
     ("#album_members_lineup", "band"),
-    ("#album_members_others", "guest"),
+    ("#album_members_guest", "guest"),
     ("#album_members_misc", "misc"),
 )
 

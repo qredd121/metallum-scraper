@@ -3,9 +3,17 @@
 import re
 from dataclasses import dataclass, field
 
-from ._html import LexborHTMLParser, clean, country_code, dl_pairs, entity_id, first_link, href, text
+from ._html import LexborHTMLParser, clean, country_code, dl_pairs, entity_id, first_link, href, text, to_int
 
 MEMBERSHIP_TABS = ("active", "past", "live", "guest", "misc")
+
+
+@dataclass
+class MembershipAlbum:
+    album_id: int | None
+    album_name: str | None
+    year: int | None
+    role_raw: str | None
 
 
 @dataclass
@@ -15,6 +23,7 @@ class Membership:
     membership_type: str
     roles_raw: str | None
     years_raw: str | None
+    albums: list[MembershipAlbum] = field(default_factory=list)
 
 
 @dataclass
@@ -67,6 +76,21 @@ def parse_artist(html: str, url: str | None = None) -> Artist | None:
             years = None
             if roles and (m := re.search(r"\(([^()]*)\)\s*$", roles)):
                 years = clean(m.group(1))
+            # Per-album roles; for guest/misc entries these are the only roles given.
+            albums = []
+            for row in block.css("table tr"):
+                cells = row.css("td")
+                if len(cells) < 3:
+                    continue
+                album_link = first_link(cells[1])
+                albums.append(
+                    MembershipAlbum(
+                        album_id=entity_id(href(album_link)),
+                        album_name=text(album_link) or text(cells[1]),
+                        year=to_int(text(cells[0])),
+                        role_raw=text(cells[2]),
+                    )
+                )
             artist.memberships.append(
                 Membership(
                     band_id=entity_id(href(link)),
@@ -74,6 +98,7 @@ def parse_artist(html: str, url: str | None = None) -> Artist | None:
                     membership_type=tab_name,
                     roles_raw=roles,
                     years_raw=years,
+                    albums=albums,
                 )
             )
     return artist

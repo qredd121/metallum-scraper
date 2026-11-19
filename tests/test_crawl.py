@@ -78,7 +78,7 @@ def test_seed_crawl_parse_export(make_client, store, tmp_path):
     assert db.execute("SELECT location FROM band_index WHERE band_id = 146").fetchone() == ("Oslo",)
 
     paths = export(store, tmp_path / "out")
-    assert len(paths) == 11
+    assert len(paths) == 12
     assert pl.read_parquet(tmp_path / "out" / "tracks.parquet").height == 3
 
     assert "pending" in status_report(store, 3.0)

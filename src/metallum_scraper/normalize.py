@@ -124,6 +124,19 @@ def artist_rows(page: Page) -> Rows:
             }
             for m in a.memberships
         ],
+        "artist_albums": [
+            {
+                "artist_id": a.id,
+                "band_id": m.band_id,
+                "membership_type": m.membership_type,
+                "album_id": al.album_id,
+                "album_name": al.album_name,
+                "year": al.year,
+                "role_raw": al.role_raw,
+            }
+            for m in a.memberships
+            for al in m.albums
+        ],
     }
 
 
