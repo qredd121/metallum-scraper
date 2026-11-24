@@ -77,6 +77,9 @@ def seed(
     enqueue: Annotated[
         bool | None, typer.Option(help="Queue bands for crawling. Default: yes for filters, no for letters.")
     ] = None,
+    limit: Annotated[
+        int | None, typer.Option(min=1, help="Queue at most N bands not already queued, then stop paging.")
+    ] = None,
     refresh_older_than: RefreshOpt = None,
     contact: ContactOpt = None,
     delay: DelayOpt = 3.0,
@@ -99,6 +102,10 @@ def seed(
     has_filters = any(v not in (None, "") for v in filters.values())
     if bool(letters) == has_filters:
         raise typer.BadParameter("use either search filters or --letters")
+    if letters and limit and enqueue is None:
+        enqueue = True
+    if limit and enqueue is False:
+        raise typer.BadParameter("--limit needs --enqueue", param_hint="--limit")
 
     store = Store(state.db)
     client = _client(store, contact, delay)
@@ -106,9 +113,9 @@ def seed(
         cutoff = _cutoff(refresh_older_than)
         if letters:
             chosen = endpoints.LETTERS if letters == "all" else [x.strip().upper() for x in letters.split(",")]
-            seed_letters(store, client, chosen, enqueue=bool(enqueue), newer_than=cutoff)
+            seed_letters(store, client, chosen, enqueue=bool(enqueue), limit=limit, newer_than=cutoff)
         else:
-            seed_advanced(store, client, filters, enqueue=enqueue is not False, newer_than=cutoff)
+            seed_advanced(store, client, filters, enqueue=enqueue is not False, limit=limit, newer_than=cutoff)
     finally:
         client.close()
         store.close()

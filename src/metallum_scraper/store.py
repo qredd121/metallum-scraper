@@ -301,6 +301,9 @@ class Store:
             (url, kind, entity_id, PRIORITY.get(kind, 0), depth, discovered_from, now()),
         )
 
+    def is_queued(self, url: str) -> bool:
+        return self.db.execute("SELECT 1 FROM queue WHERE url = ?", (url,)).fetchone() is not None
+
     def next_item(self, kinds: Iterable[str], max_attempts: int) -> QueueItem | None:
         kinds = list(kinds)
         marks = ",".join("?" * len(kinds))

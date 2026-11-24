@@ -55,10 +55,15 @@ def seed_listing(
     columns: list[str],
     enqueue: bool,
     newer_than: datetime | None = None,
-) -> tuple[int, int]:
-    """Page through a DataTables listing. Returns (bands seen, total reported)."""
-    start, total, seen = 0, None, 0
-    while True:
+    limit: int | None = None,
+) -> tuple[int, int, int]:
+    """Page through a DataTables listing.
+
+    ``limit`` caps how many bands not already in the queue get enqueued; paging stops once reached.
+    Returns (bands seen, total reported, bands newly queued).
+    """
+    start, total, seen, queued = 0, None, 0, 0
+    while limit is None or queued < limit:
         url = url_for(start)
         page = fetch_patiently(client, url, newer_than)
         if page.status != 200:
@@ -75,34 +80,52 @@ def seed_listing(
             store.upsert_band_index(band_index_row(b, url) for b in bands)
             if enqueue:
                 for b in bands:
-                    store.enqueue(endpoints.band(b.band_id), "band", b.band_id, 0, url)
+                    if limit is not None and queued >= limit:
+                        break
+                    url_band = endpoints.band(b.band_id)
+                    is_new = not store.is_queued(url_band)
+                    # Re-enqueue existing ones too: promotes bands found via --expand-depth to depth 0.
+                    store.enqueue(url_band, "band", b.band_id, 0, url)
+                    queued += is_new
         seen += len(bands)
         start += len(listing.rows)
-        logger.info(f"listing {start}/{total}")
+        logger.info(f"listing {start}/{total}, {queued} newly queued")
         if start >= total:
             break
-    return seen, total or 0
+    return seen, total or 0, queued
 
 
-def seed_advanced(store: Store, client: Client, filters: dict[str, str], enqueue: bool = True, **kw) -> int:
+def seed_advanced(
+    store: Store, client: Client, filters: dict[str, str], enqueue: bool = True, limit: int | None = None, **kw
+) -> int:
+    """Returns the number of bands newly queued."""
     filters = {k: str(v) for k, v in filters.items() if v not in (None, "")}
-    store.add_seed({"type": "advanced", "filters": filters, "enqueue": enqueue})
-    seen, total = seed_listing(
-        store, client, lambda s: endpoints.advanced_bands(filters, s), advanced_layout(filters), enqueue, **kw
+    store.add_seed({"type": "advanced", "filters": filters, "enqueue": enqueue, "limit": limit})
+    seen, total, queued = seed_listing(
+        store, client, lambda s: endpoints.advanced_bands(filters, s), advanced_layout(filters), enqueue,
+        limit=limit, **kw,
     )
-    logger.success(f"seeded {seen} bands (site reports {total})")
-    return seen
+    logger.success(f"seen {seen} of {total} matching bands, {queued} newly queued")
+    return queued
 
 
-def seed_letters(store: Store, client: Client, letters: Iterable[str], enqueue: bool = False, **kw) -> int:
+def seed_letters(
+    store: Store, client: Client, letters: Iterable[str], enqueue: bool = False, limit: int | None = None, **kw
+) -> int:
+    """Returns the number of bands newly queued."""
     letters = list(letters)
-    store.add_seed({"type": "letters", "letters": letters, "enqueue": enqueue})
-    seen = 0
+    store.add_seed({"type": "letters", "letters": letters, "enqueue": enqueue, "limit": limit})
+    queued = 0
     for letter in letters:
-        n, total = seed_listing(store, client, lambda s: endpoints.letter(letter, s), LETTER_LAYOUT, enqueue, **kw)
-        logger.success(f"letter {letter}: {n} bands (site reports {total})")
-        seen += n
-    return seen
+        remaining = None if limit is None else limit - queued
+        if remaining == 0:
+            break
+        n, total, q = seed_listing(
+            store, client, lambda s: endpoints.letter(letter, s), LETTER_LAYOUT, enqueue, limit=remaining, **kw
+        )
+        logger.success(f"letter {letter}: {n} of {total} bands, {q} newly queued")
+        queued += q
+    return queued
 
 
 # --- stage handlers ------------------------------------------------------

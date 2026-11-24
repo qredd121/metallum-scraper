@@ -84,6 +84,16 @@ def test_seed_crawl_parse_export(make_client, store, tmp_path):
     assert "pending" in status_report(store, 3.0)
 
 
+def test_seed_limit_counts_only_new_bands_and_stops_paging(make_client, store):
+    client, transport, _ = make_client(routes())
+    assert seed_advanced(store, client, FILTERS, limit=1) == 1
+    assert transport.calls == [endpoints.advanced_bands(FILTERS, 0)]  # second page never requested
+    # Darkthrone is already queued, so the next seed skips it and queues the band on page 2.
+    assert seed_advanced(store, client, FILTERS, limit=1) == 1
+    assert set(queue_status(store)) == {endpoints.band(146), endpoints.band(999)}
+    assert seed_advanced(store, client, FILTERS, limit=5) == 0
+
+
 def test_expand_depth_enqueues_artist_bands(make_client, store):
     client, _, _ = make_client(routes())
     seed_advanced(store, client, FILTERS)
